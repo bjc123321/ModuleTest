@@ -61,7 +61,6 @@ bool SerialPortManager::openPort(const QString &portName, QSerialPort::OpenMode 
         return false;
     }
 
-
     if (!serialPort->isOpen()) {
         qDebug()<<serialPort->portName()<<"打开";
         return serialPort->open(mode);
@@ -93,9 +92,10 @@ bool SerialPortManager::writeData(const QString &portName, const QByteArray &dat
     uint16_t crc = ModbusProtocolParser::crc16UsingTable(data);
     qDebug()<<"CRC:"<<QString("%1").arg(crc,4,16,QLatin1Char('0')); //不足8位补0
 
-    //注意：此crc的低位和高位要根据具体协议看高低的顺序,且发送的字节序要跟接收端字节序保持一致
-    packet.append(crc & 0xFF);        // Append low byte of CRC,先低位
-    packet.append((crc >> 8) & 0xFF); // Append high byte of CRC,再高位
+    //假如：查表法查出来的CRC = 0xABCD，则其中高位字节是0xAB,低位字节是:0xCD
+    //注意：Modbus 协议通常使用小端序(小地址存低字节,高地址存高字节),且发送的字节序要跟接收端字节序保持一致
+    packet.append(crc & 0xFF);        // Append low byte of CRC,先低字节(0xCD)
+    packet.append((crc >> 8) & 0xFF); // Append high byte of CRC,再高字节(0xAB)
     if (!serialPort->isOpen()) {
         qDebug() << "Serial port is not open!";
         return false;
@@ -152,18 +152,20 @@ void SerialPortManager::handleReadyRead()
     QSerialPort *serialPort = qobject_cast<QSerialPort *>(sender());
     if (serialPort) {
 
+        //读取串口缓存区中数据
         QByteArray data = serialPort->readAll();
         qDebug()<<"data长度:"<<data.size()<<"串口名:"<<serialPort->portName();
         if (data.size() >= 2) {
 
-
-            //采用先低后高,通过 static_cast<uint8_t> 明确指定类型为"无符号" 8 位整数，这可以避免符号扩展问题。
+            /*
+             * 例：这时串口缓存读到的CRC为0xCDAB。
+             * 则crc的倒数第一个元素0xAB左移 8 位后得到 0xAB00;
+             * crc的倒数第二个元素0xCD，保持不变为 0x00CD
+             * 按位或操作后，结果为 0xAB00 | 0x00CD = 0xABCD，即receivedCRC = ABCD
+             * 通过 static_cast<uint8_t> 明确指定类型为"无符号" 8 位整数，这可以避免符号扩展问题。
+            */
             uint16_t receivedCRC = (static_cast<uint8_t>(data.at(data.size() - 1)) << 8) |
                                    static_cast<uint8_t>(data.at(data.size() - 2));
-            /*下面是先高后低，后续根据具体协议解开
-            uint16_t receivedCRC = (static_cast<uint8_t>(data.at(data.size() - 2)) << 8) |
-                                   static_cast<uint8_t>(data.at(data.size() - 1));
-            */
             qDebug()<<"data:"<<data.toHex();
             data.chop(2);  // Remove CRC bytes from data
             uint16_t calculatedCRC = ModbusProtocolParser::crc16UsingTable(data);
