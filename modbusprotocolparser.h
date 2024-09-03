@@ -20,6 +20,10 @@ public:
     // 生成 Modbus 响应帧
     QByteArray generateResponse(uint8_t slaveAddress, uint8_t functionCode, const QByteArray &data);
 
+    // 通用数据域提取函数,可处理"请求帧"和"响应帧"
+    QByteArray extractDataField(const QByteArray& frame, bool isRequest);
+
+
     //方法1: 逐位计算法, CRC16 校验效率较低，不适用于高性能场景
     static uint16_t calculateCRC16(const QByteArray &data);
     //方法2：查表法，高性能的场景（如网络协议实现、文件校验等）通常使用查表法.查表法的速度明显快于逐位计算法
@@ -40,9 +44,12 @@ public:
     float floatData(QByteArray orgData);
 
 private:
-    uint8_t slaveAddress = 0;  // 从机地址
-    uint8_t functionCode = 0;  // 功能码
-    QByteArray data;           // 数据域
+    uint8_t slaveAddress = 0;   // 从机地址
+    uint8_t functionCode = 0;   // 功能码
+    uint8_t byteCount = 0;      // 字节计数
+    QByteArray data;            // 数据域
+
+
 signals:
 
 public slots:

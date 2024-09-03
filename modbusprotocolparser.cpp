@@ -57,11 +57,20 @@ bool ModbusProtocolParser::parseRequest(const QByteArray &request)
 
     /*
      * 提取数据部分(此方法普遍适用与Modbus Rtu协议的"变长数据域"的提取,因为不同功能码的消息，数据域的长度可能不同)
-     * 注：有些数据帧可能包含字节计数，也要把字节计数部分去除;
+     * 注：有些数据帧可能包含字节计数，也要把字节计数部分去除
+     * (具体协议具体分析,某些协议可能数据帧格式有变化,但此顺序是保持不变的：[地址] [功能码] [字节计数] [数据域] [CRC])
      * "功能码"是判断是否包含字节计数的,如:0x01,0x02,0x03,0x04都是包含字节计数的功能码;
      * data = request.mid(3, request.size() - 5);// 数据域大小 = 总大小 - 1字节地址 - 1字节功能码 -1字节计数 - 2字节CRC
      */
-    data = request.mid(2, request.size() - 4);  // 数据域大小 = 总大小 - 1字节地址 - 1字节功能码 - 2字节CRC
+
+    if (functionCode >= 0x01 && functionCode <= 0x04) {
+        // 功能码 0x01 到 0x04 的响应包含字节计数
+        data = request.mid(3, request.size() - 5);// 数据域大小 = 总大小 - 1字节地址 - 1字节功能码 -1字节计数 - 2字节CRC
+    }else{
+        // 其他功能码的响应通常不包含字节计数
+        data = request.mid(2, request.size() - 4);  // 数据域大小 = 总大小 - 1字节地址 - 1字节功能码 - 2字节CRC
+    }
+
 
     // 提取接收到的 CRC16 校验
     uint16_t receivedCRC = (static_cast<uint8_t>(request.at(request.size() - 1)) << 8) |
@@ -84,6 +93,75 @@ QByteArray ModbusProtocolParser::generateResponse(uint8_t slaveAddress, uint8_t 
 
     qDebug() << "生成的response：" << response.toHex();
     return response;
+}
+
+QByteArray ModbusProtocolParser::extractDataField(const QByteArray& frame, bool isRequest)
+{
+    if (frame.size() < 4) {
+        // 帧长度过短，无法解析
+        qDebug() << "Frame too short to parse.";
+        return QByteArray();
+    }
+
+    uint8_t address = static_cast<uint8_t>(frame.at(0));       // 提取地址
+    uint8_t functionCode = static_cast<uint8_t>(frame.at(1));  // 提取功能码
+    bool isError = functionCode & 0x80;                        // 检查是否是异常响应
+
+    if (!isRequest && isError) {
+        // 异常响应处理
+        // 异常响应结构：[地址] [异常功能码] [异常码] [CRC]
+        return frame.mid(2, 1);  // 数据域为异常码，通常只有 1 字节
+    }
+
+    if (isRequest) {
+        // 处理请求帧
+        switch (functionCode) {
+            case 0x01: // 读线圈状态
+            case 0x02: // 读离散输入状态
+            case 0x03: // 读保持寄存器
+            case 0x04: // 读输入寄存器
+                // 请求帧包含起始地址和寄存器数量
+                return frame.mid(2, 4);  // 起始地址 + 寄存器数量，共 4 字节
+
+            case 0x05: // 写单个线圈
+            case 0x06: // 写单个寄存器
+                // 请求帧包含地址和写入值
+                return frame.mid(2, 4);  // 地址 + 写入值，共 4 字节
+
+            case 0x0F: // 写多个线圈
+            case 0x10: // 写多个寄存器
+                // 请求帧包含起始地址、寄存器数量、字节计数和数据
+                return frame.mid(7, static_cast<uint8_t>(frame.at(6)));  // 数据域从字节计数之后开始
+
+            default:
+                qDebug() << "Unknown function code in request:" << functionCode;
+                return QByteArray();
+        }
+    } else {
+        // 处理响应帧
+        switch (functionCode) {
+            case 0x01: // 读线圈状态
+            case 0x02: // 读离散输入状态
+            case 0x03: // 读保持寄存器
+            case 0x04: // 读输入寄存器
+                // 响应帧包含字节计数和数据域
+                return frame.mid(3, static_cast<uint8_t>(frame.at(2)));  // 从字节计数之后开始，长度为字节计数
+
+            case 0x05: // 写单个线圈
+            case 0x06: // 写单个寄存器
+                // 响应帧通常是回显请求内容
+                return frame.mid(2, 4);  // 地址 + 写入值，共 4 字节
+
+            case 0x0F: // 写多个线圈
+            case 0x10: // 写多个寄存器
+                // 响应帧回显起始地址和寄存器数量
+                return frame.mid(2, 4);  // 起始地址 + 寄存器数量，共 4 字节
+
+            default:
+                qDebug() << "Unknown function code in response:" << functionCode;
+                return QByteArray();
+        }
+    }
 }
 
 
