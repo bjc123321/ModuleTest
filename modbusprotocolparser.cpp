@@ -52,10 +52,10 @@ bool ModbusProtocolParser::parseRequest(const QByteArray &request)
     // 提取地址域（从机地址）
     slaveAddress = static_cast<uint8_t>(request.at(0));
 
-    // 提取功能码
+    // 提取功能码(值得注意的是：异常响应中"功能码"的最高位会设置为 1，表示错误响应,)
     functionCode = static_cast<uint8_t>(request.at(1));
 
-    // 提取数据部分
+    // 提取数据部分(此方法普遍适用与Modbus Rtu协议的"变长数据域"的提取,因为不同功能码的消息，数据域的长度可能不同)
     data = request.mid(2, request.size() - 4);  // 数据域大小 = 总大小 - 1字节地址 - 1字节功能码 - 2字节CRC
 
     // 提取接收到的 CRC16 校验
