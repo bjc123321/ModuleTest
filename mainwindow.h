@@ -23,13 +23,18 @@ public:
 private:
     Ui::MainWindow *ui;
 
+
+
     QQueue<QByteArray> controlDataQueue;  // 控制数据命令队列
     QQueue<QByteArray> readDataQueue;  // 读取数据命令队列
     bool isSerialControlBusy = false;     // 串口控制忙碌标志
     bool isSerialReadBusy = false;     // 串口读取忙碌标志
 
 
-    void signalBind2();//测试
+    //测试控制鲲航科技
+    void testKHKJ();
+    //测试控制8961C2检测仪
+    void test8961C2();
 
 private:
     void sendNextControlData();      // 从队列发送下一个控制的数据
