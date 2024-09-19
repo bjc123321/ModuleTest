@@ -72,6 +72,103 @@ void MainWindow::signalBind2()
             }
         });
 
+        connect(ui->pushButton_8,&QPushButton::clicked,this,[this](){
+            // 发送指定的16进制数据
+             qDebug()<<"锁定页面0";
+            QByteArray dataToSend = QByteArray::fromHex("011000000001020000");
+            controlDataQueue.enqueue(dataToSend); // 将数据加入队列
+            qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isSerialControlBusy;
+            // 如果串口不忙，立即发送
+            if (!isSerialControlBusy) {
+                sendNextControlData();
+            }
+        });
+
+        connect(ui->pushButton_9,&QPushButton::clicked,this,[this](){
+            // 发送指定的16进制数据
+             qDebug()<<"开始突加。。。";
+            QByteArray dataToSend = QByteArray::fromHex("011000000001020024");
+            controlDataQueue.enqueue(dataToSend); // 将数据加入队列
+            qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isSerialControlBusy;
+            // 如果串口不忙，立即发送
+            if (!isSerialControlBusy) {
+                sendNextControlData();
+            }
+        });
+
+        connect(ui->pushButton_10,&QPushButton::clicked,this,[this](){
+
+            qDebug()<<"读取时间:年、月、日、时、分、秒......";
+            // 发送指定的16进制数据(最后的0003意为:读3个寄存器即：6个字节)
+            QByteArray dataToSend = QByteArray::fromHex("010300140003");
+            controlDataQueue.enqueue(dataToSend); // 将数据加入队列
+            qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isSerialControlBusy;
+            // 如果串口不忙，立即发送
+            if (!isSerialControlBusy) {
+                sendNextControlData();
+            }
+        });
+
+        connect(ui->pushButton_11,&QPushButton::clicked,this,[this](){
+
+            qDebug()<<"锁定页面4......";
+            //0x84即0084,锁定数据更新并切换到4页
+            QByteArray dataToSend = QByteArray::fromHex("011000000001020084");
+            controlDataQueue.enqueue(dataToSend); // 将数据加入队列
+            qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isSerialControlBusy;
+            // 如果串口不忙，立即发送
+            if (!isSerialControlBusy) {
+                sendNextControlData();
+            }
+        });
+        connect(ui->pushButton_12,&QPushButton::clicked,this,[this](){
+
+            qDebug()<<"返回寄存器状态......";
+
+            QByteArray dataToSend = QByteArray::fromHex("010300000001");
+            controlDataQueue.enqueue(dataToSend); // 将数据加入队列
+            qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isSerialControlBusy;
+            // 如果串口不忙，立即发送
+            if (!isSerialControlBusy) {
+                sendNextControlData();
+            }
+        });
+
+        connect(ui->pushButton_13,&QPushButton::clicked,this,[this](){
+
+            qDebug()<<"锁定页面1......";
+
+            QByteArray dataToSend = QByteArray::fromHex("011000000001020081");
+            controlDataQueue.enqueue(dataToSend); // 将数据加入队列
+            qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isSerialControlBusy;
+            // 如果串口不忙，立即发送
+            if (!isSerialControlBusy) {
+                sendNextControlData();
+            }
+        });
+
+        connect(ui->pushButton_14,&QPushButton::clicked,this,[this](){
+
+            qDebug()<<"读取线路一电压偏差...";
+            QStringList requestFramList = {"011000000001020081","010300120002","0103001A0002"};
+            for(int i = 0;i<requestFramList.length();i++){
+
+                QString hexString = requestFramList.at(i);  // 获取 QString
+                QByteArray byteArray = hexString.toUtf8();  // 将 QString 转换为 QByteArray
+                QByteArray dataToSend = QByteArray::fromHex(byteArray);  // 使用 QByteArray::fromHex
+                controlDataQueue.enqueue(dataToSend); // 将数据加入队列
+                qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isSerialControlBusy;
+            }
+
+            //注意：对于读取仪表示数前，要先锁定当前数据所在页面，再执行请求帧
+//            QByteArray dataToSend = QByteArray::fromHex("010300120002");
+//            controlDataQueue.enqueue(dataToSend); // 将数据加入队列
+//            qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isSerialControlBusy;
+            // 如果串口不忙，立即发送
+            if (!isSerialControlBusy) {
+                sendNextControlData();
+            }
+        });
 
         //0103002000030401 :开始检测：
         //接收数据：0103060001000000001cb5  检测到1号开
@@ -100,6 +197,7 @@ void MainWindow::onDataReceived(const QString &portName, const QByteArray &data)
 {
     qDebug() << "Data received on port" << portName << ":" << data.toHex();
             // 处理接收到的数据
+
     isSerialControlBusy = false; // 标记为不忙碌
     // 继续发送队列中的下一个数据
     sendNextControlData();

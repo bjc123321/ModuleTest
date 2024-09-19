@@ -167,13 +167,31 @@ void SerialPortManager::handleReadyRead()
             uint16_t receivedCRC = (static_cast<uint8_t>(data.at(data.size() - 1)) << 8) |
                                    static_cast<uint8_t>(data.at(data.size() - 2));
             qDebug()<<"data:"<<data.toHex();
+
+            ModbusProtocolParser parser; // 创建 ModbusProtocolParser 对象
+            // 提取功能码(值得注意的是：异常响应中"功能码"的最高位会设置为 1，表示错误响应,)
+            uint8_t functionCode = static_cast<uint8_t>(data.at(1));
+            QByteArray dataArea;
+            if (functionCode >= 0x01 && functionCode <= 0x04) {
+                // 功能码 0x01 到 0x04 的响应包含字节计数
+                dataArea = data.mid(3, data.size() - 5);// 数据域大小 = 总大小 - 1字节地址 - 1字节功能码 -1字节计数 - 2字节CRC
+            }else{
+                // 其他功能码的响应通常不包含字节计数
+                dataArea = data.mid(2, data.size() - 4);  // 数据域大小 = 总大小 - 1字节地址 - 1字节功能码 - 2字节CRC
+            }
+
             data.chop(2);  // Remove CRC bytes from data
             uint16_t calculatedCRC = ModbusProtocolParser::crc16UsingTable(data);
             qDebug()<<"receivedCRC:"<<receivedCRC<<"calculatedCRC"<<calculatedCRC<<"ChopData:"<<data.toHex();
             //开始检查收到的和发送的一致性;
             if (receivedCRC == calculatedCRC) {
                 qDebug() << "收到合法数据(Succesed):" << data.toHex();
+
+
+                parser.floatData(dataArea); // 如果 floatData 是静态函数，则可以用类名直接调用
                 emit dataReceived(serialPort->portName(), data);
+
+
             } else {
                 qDebug() << "*******CRC 检查失败(Fail),发送的和接收数据不一致!!!*******";
             }

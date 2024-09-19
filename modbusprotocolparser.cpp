@@ -220,14 +220,19 @@ bool ModbusProtocolParser::verifyCRC(const QByteArray &data, uint16_t receivedCR
 
 float ModbusProtocolParser::floatData(QByteArray orgData)
 {
-    if(orgData.size() == 4){
-        return -1;
+    qDebug() << "接收到的数据域:" << orgData.toHex() << "长度：" << orgData.size();
+
+    // 修改数据长度检查条件
+    if(orgData.size() != 4){
+        return -1; // 返回错误值或处理异常情况
     }
+
     float floatValue = 0.0;
     QDataStream stream(orgData);
     stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
-    stream.setByteOrder(QDataStream::LittleEndian); // 根据具体协议调整字节序:协议为小端存储
+    stream.setByteOrder(QDataStream::LittleEndian); // 协议为小端存储
     stream >> floatValue;
-    qDebug() << "解析后浮点值:"  <<  floatValue << "数据" << orgData.toHex();
+
+    qDebug() << "解析后浮点值:"  <<  floatValue << "数据:" << orgData.toHex();
     return floatValue;
 }
