@@ -14,8 +14,8 @@ public:
     explicit ModbusProtocolParser(QObject *parent = 0);
 
 public:
-    // 解析 Modbus 请求帧
-    bool parseRequest(const QByteArray &request);
+    // 解析 Modbus 响应帧
+    bool parseReponse(const QByteArray &request);
 
     // 生成 Modbus 响应帧
     QByteArray generateResponse(uint8_t slaveAddress, uint8_t functionCode, const QByteArray &data);
@@ -38,7 +38,7 @@ public:
     uint8_t getFunctionCode() const { return functionCode; }
 
     // 获取解析后的数据内容
-    QByteArray getData() const { return data; }
+    QByteArray getDataField() const { return dataField; }
 
     //解析16进制为浮点数
     float floatData(QByteArray orgData);
@@ -47,7 +47,7 @@ private:
     uint8_t slaveAddress = 0;   // 从机地址
     uint8_t functionCode = 0;   // 功能码
     uint8_t byteCount = 0;      // 字节计数
-    QByteArray data;            // 数据域
+    QByteArray dataField;       // 数据域
 
 
 signals:

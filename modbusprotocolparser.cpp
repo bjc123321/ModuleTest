@@ -42,18 +42,20 @@ static const quint16 crc16Table[] =
     0x8201, 0x42C0, 0x4380, 0x8341, 0x4100, 0x81C1, 0x8081, 0x4040
 };
 
-bool ModbusProtocolParser::parseRequest(const QByteArray &request)
+bool ModbusProtocolParser::parseReponse(const QByteArray &request)
 {
     if (request.size() < 4) {  // Modbus 最小请求帧长度
-            qDebug() << "请求帧长度不足，无法解析";
+            qDebug() << "响应帧长度不足，无法解析";
             return false;
     }
 
     // 提取地址域（从机地址）
     slaveAddress = static_cast<uint8_t>(request.at(0));
+    qDebug()<<"从机地址(10十进制)"<<slaveAddress;
 
     // 提取功能码(值得注意的是：异常响应中"功能码"的最高位会设置为 1，表示错误响应,)
     functionCode = static_cast<uint8_t>(request.at(1));
+    qDebug()<<"功能码(10十进制)"<<functionCode;
 
     /*
      * 提取数据部分(此方法普遍适用与Modbus Rtu协议的"变长数据域"的提取,因为不同功能码的消息，数据域的长度可能不同)
@@ -65,14 +67,22 @@ bool ModbusProtocolParser::parseRequest(const QByteArray &request)
 
     if (functionCode >= 0x01 && functionCode <= 0x04) {
         // 功能码 0x01 到 0x04 的响应包含字节计数
-        data = request.mid(3, request.size() - 5);// 数据域大小 = 总大小 - 1字节地址 - 1字节功能码 -1字节计数 - 2字节CRC
+        dataField = request.mid(3, request.size() - 5);// 数据域大小 = 总大小 - 1字节地址 - 1字节功能码 -1字节计数 - 2字节CRC
     }else{
         // 其他功能码的响应通常不包含字节计数
-        data = request.mid(2, request.size() - 4);  // 数据域大小 = 总大小 - 1字节地址 - 1字节功能码 - 2字节CRC
+        dataField = request.mid(2, request.size() - 4);  // 数据域大小 = 总大小 - 1字节地址 - 1字节功能码 - 2字节CRC
     }
 
+    qDebug()<<"数据域"<<dataField.toHex();
 
     // 提取接收到的 CRC16 校验
+    /*
+     * 例：这时串口缓存读到的CRC为0xCDAB。
+     * 则crc的倒数第一个元素0xAB左移 8 位后得到 0xAB00;
+     * crc的倒数第二个元素0xCD，保持不变为 0x00CD
+     * 按位或操作后，结果为 0xAB00 | 0x00CD = 0xABCD，即receivedCRC = ABCD
+     * 通过 static_cast<uint8_t> 明确指定类型为"无符号" 8 位整数，这可以避免符号扩展问题。
+    */
     uint16_t receivedCRC = (static_cast<uint8_t>(request.at(request.size() - 1)) << 8) |
                            static_cast<uint8_t>(request.at(request.size() - 2));
 
@@ -210,10 +220,10 @@ bool ModbusProtocolParser::verifyCRC(const QByteArray &data, uint16_t receivedCR
     uint16_t calculatedCRC = crc16UsingTable(data);
     qDebug()<<"calculatedCRC:"<<calculatedCRC<<"receivedCRC:"<<receivedCRC;
     if (receivedCRC == calculatedCRC) {
-        qDebug() << "CRC 校验通过.";
+        qDebug() << "5.CRC 校验通过(￣︶￣).";
         return true;
     } else {
-        qDebug() << "*******CRC 校验失败. Received:" << receivedCRC << "Calculated:" << calculatedCRC;
+        qDebug() << "5.*******CRC 检查失败(Fail),发送的和接收数据不一致!!!*******" << receivedCRC << "Calculated:" << calculatedCRC;
         return false;
     }
 }

@@ -26,9 +26,7 @@ private:
 
 
     QQueue<QByteArray> controlDataQueue;  // 控制数据命令队列
-    QQueue<QByteArray> readDataQueue;  // 读取数据命令队列
     bool isSerialControlBusy = false;     // 串口控制忙碌标志
-    bool isSerialReadBusy = false;     // 串口读取忙碌标志
 
 
     //测试控制鲲航科技
@@ -39,7 +37,7 @@ private:
 private:
     void sendNextControlData();      // 从队列发送下一个控制的数据
 
-    void sendNextReadData();      // 从队列发送下一个数据
+
 
 private slots:
 

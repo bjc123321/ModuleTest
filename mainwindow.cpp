@@ -7,20 +7,20 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     // 配置和使用 SerialPortManager，设置发送端串口，打开串口等
-        SerialPortManager &manager = SerialPortManager::getInstance();
-        manager.addSerialPort("COM1");
-        manager.configurePort("COM1", QSerialPort::Baud9600, QSerialPort::Data8, QSerialPort::NoParity, QSerialPort::OneStop, QSerialPort::NoFlowControl);
-        manager.openPort("COM1", QSerialPort::ReadWrite);
-        // 发送数据以测试接收
-        manager.writeData("COM1", QByteArray::fromHex("010600200007"));
+    SerialPortManager &manager = SerialPortManager::getInstance();
+    manager.addSerialPort("COM1");
+    manager.configurePort("COM1", QSerialPort::Baud9600, QSerialPort::Data8, QSerialPort::NoParity, QSerialPort::OneStop, QSerialPort::NoFlowControl);
+    manager.openPort("COM1", QSerialPort::ReadWrite);
+    // 发送数据以测试接收
+    manager.writeData("COM1", QByteArray::fromHex("010600200007"));
 
 
-        manager.addSerialPort("COM4");
-        manager.configurePort("COM4", QSerialPort::Baud9600, QSerialPort::Data8, QSerialPort::NoParity, QSerialPort::OneStop, QSerialPort::NoFlowControl);
-        manager.openPort("COM4", QSerialPort::ReadWrite);
+    manager.addSerialPort("COM4");
+    manager.configurePort("COM4", QSerialPort::Baud9600, QSerialPort::Data8, QSerialPort::NoParity, QSerialPort::OneStop, QSerialPort::NoFlowControl);
+    manager.openPort("COM4", QSerialPort::ReadWrite);
 //        manager.writeData("COM4", QByteArray::fromHex("01050020ff00"));
 
-        connect(&manager, &SerialPortManager::dataReceived, this, &MainWindow::onDataReceived);
+    connect(&manager, &SerialPortManager::dataReceived, this, &MainWindow::onDataReceived);
 
 
     testKHKJ();
@@ -89,11 +89,11 @@ void MainWindow::testKHKJ()
             // 发送指定的16进制数据
              qDebug()<<"开始检测那些开关是开的";
             QByteArray dataToSend = QByteArray::fromHex("0103002000030401");
-            readDataQueue.enqueue(dataToSend); // 将数据加入队列
+            controlDataQueue.enqueue(dataToSend); // 将数据加入队列
             qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isSerialControlBusy;
             // 如果串口不忙，立即发送
             if (!isSerialControlBusy) {
-                sendNextReadData();
+                sendNextControlData();
             }
         });
 
@@ -133,10 +133,16 @@ void MainWindow::test8961C2()
     connect(ui->pushButton_10,&QPushButton::clicked,this,[this](){
 
         qDebug()<<"读取时间:年、月、日、时、分、秒......";
+         QStringList requestFramList = {"011000000001020080","010300140003"};
         // 发送指定的16进制数据(最后的0003意为:读3个寄存器即：6个字节)
-        QByteArray dataToSend = QByteArray::fromHex("010300140003");
-        controlDataQueue.enqueue(dataToSend); // 将数据加入队列
-        qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isSerialControlBusy;
+         for(int i = 0;i<requestFramList.length();i++){
+
+             QString hexString = requestFramList.at(i);  // 获取 QString
+             QByteArray byteArray = hexString.toUtf8();  // 将 QString 转换为 QByteArray
+             QByteArray dataToSend = QByteArray::fromHex(byteArray);  // 使用 QByteArray::fromHex
+             controlDataQueue.enqueue(dataToSend); // 将数据加入队列
+             qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isSerialControlBusy;
+         }
         // 如果串口不忙，立即发送
         if (!isSerialControlBusy) {
             sendNextControlData();
@@ -216,6 +222,14 @@ void MainWindow::onDataReceived(const QString &portName, const QByteArray &data)
     qDebug() << "Data received on port" << portName << ":" << data.toHex();
             // 处理接收到的数据
 
+    // 提取功能码(值得注意的是：异常响应中"功能码"的最高位会设置为 1，表示错误响应,)
+    uint8_t functionCode = static_cast<uint8_t>(data.at(1));
+    if (functionCode >= 0x01 && functionCode <= 0x04){
+        qDebug()<<"读。。。。要确保已经切换到数据所在的相应的页面,否则打印会错误!";
+    }else{
+        qDebug()<<"写。。。。";
+    }
+
     isSerialControlBusy = false; // 标记为不忙碌
     // 继续发送队列中的下一个数据
     sendNextControlData();
@@ -224,31 +238,16 @@ void MainWindow::onDataReceived(const QString &portName, const QByteArray &data)
 
 void MainWindow::sendNextControlData()
 {
-    qDebug()<<"队列中数据:"<<controlDataQueue.length();
+    qDebug()<<"********************队列中数据个数:"<<controlDataQueue.length()<<"*******************";
     if (!controlDataQueue.isEmpty()) {
-        qDebug()<<"队列中有数据";
         QByteArray nextData = controlDataQueue.dequeue(); // 从队列中取出数据
         isSerialControlBusy = true; // 标记为忙碌
         SerialPortManager::getInstance().writeData("COM4", nextData);
+    }else{
+        qDebug()<<"队列中数据全部发送完毕!!";
     }
-//    if(dataQueue.isEmpty()){
-//        qDebug()<<"队列中数据全部发送完毕!!";
-//    }
 }
 
-void MainWindow::sendNextReadData()
-{
-    qDebug()<<"队列中数据:"<<readDataQueue.length();
-    if (!readDataQueue.isEmpty()) {
-        qDebug()<<"队列中有数据";
-        QByteArray nextData = readDataQueue.dequeue(); // 从队列中取出数据
-        isSerialReadBusy = true; // 标记为忙碌
-        SerialPortManager::getInstance().readData("COM4",nextData);
-    }
-//    if(dataQueue.isEmpty()){
-//        qDebug()<<"队列中数据全部发送完毕!!";
-//    }
-}
 
 MainWindow::~MainWindow()
 {

@@ -27,7 +27,6 @@ public:
     bool openPort(const QString &portName, QSerialPort::OpenMode mode);
     void closePort(const QString &portName);
     bool writeData(const QString &portName, const QByteArray &data);
-    QByteArray readData(const QString &portName, const QByteArray &data);
 
     // 设置串口属性
     bool configurePort(const QString &portName,
@@ -42,6 +41,7 @@ signals:
 
 private slots:
     void handleReadyRead();
+
 
 private:
     SerialPortManager(QObject *parent = nullptr);  // 私有化构造函数

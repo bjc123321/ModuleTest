@@ -87,10 +87,11 @@ bool SerialPortManager::writeData(const QString &portName, const QByteArray &dat
     }
 
     QByteArray packet = data;
-    //    uint16_t crc = calculateCRC16(data);//逐位计算法,效率较低，不适用于高性能场景
+    //逐位计算法,效率较低，不适用于高性能场景
+    //uint16_t crc = calculateCRC16(data);
     //查表法:高性能的场景（如网络协议实现、文件校验等）通常使用查表法.查表法的速度明显快于逐位计算法
     uint16_t crc = ModbusProtocolParser::crc16UsingTable(data);
-    qDebug()<<"CRC:"<<QString("%1").arg(crc,4,16,QLatin1Char('0')); //不足8位补0
+    qDebug()<<"1.查表的CRC:"<<QString("%1").arg(crc,4,16,QLatin1Char('0')); //不足8位补0
 
     //假如：查表法查出来的CRC = 0xABCD，则其中高位字节是0xAB,低位字节是:0xCD
     //注意：Modbus 协议通常使用小端序(小地址存低字节,高地址存高字节),且发送的字节序要跟接收端字节序保持一致
@@ -101,47 +102,22 @@ bool SerialPortManager::writeData(const QString &portName, const QByteArray &dat
         return false;
     }
 
+    //执行下面这条语句后,QSerialPort的缓冲区里就会有数据,有数据就会触发QSerialPort::readyRead()
     qint64 bytesWritten = serialPort->write(packet);
     //flush() 强制将缓冲区的内容立即写入到底层设备，这就保证了数据不会滞留在发送缓冲区中。
     serialPort->flush();
     if (bytesWritten == -1) {
-        qDebug() << "Failed to write to the serial port!";
+        qDebug() << "2.Failed to write to the serial port!";
     } else if (bytesWritten < packet.size()) {
-        qDebug() << "Only partially wrote" << bytesWritten << "bytes to the serial port.";
+        qDebug() << "2.Only partially wrote" << bytesWritten << "bytes to the serial port.";
     } else {
-        qDebug() << "Successfully wrote" << bytesWritten << "bytes to the serial port.";
+        qDebug() << "2.Successfully wrote" << bytesWritten << "bytes to the serial port.";
     }
-    qDebug() << "Sending data:" << packet.toHex();
+    qDebug() << "3.Sending data:" << packet.toHex()<<"Sending data大小:"<<packet.size();
     return serialPort->waitForBytesWritten(500);//等待最多500毫秒直到所有数据都写入成功。此时间内没有完成写入,返回 false。
 }
 
-QByteArray SerialPortManager::readData(const QString &portName, const QByteArray &data)
-{
 
-    QSerialPort *serialPort = getSerialPort(portName);
-    if (!serialPort || !serialPort->isOpen()){
-        qDebug()<<"串口没打开!";
-         return QByteArray();
-    }
-    ModbusProtocolParser parser;
-    if (parser.parseRequest(data)) {
-        uint8_t slaveAddress = parser.getSlaveAddress();  // 获取地址域
-        uint8_t functionCode = parser.getFunctionCode();  // 获取功能域
-        QByteArray parsedData = parser.getData();         // 获取数据域
-
-        qDebug() << "Received Modbus Request. Slave Address:" << slaveAddress
-                 << "Function Code:" << functionCode
-                 << "Data:" << parsedData.toHex();
-
-        // 根据功能码和数据生成响应帧（假设只回送原始数据）
-        QByteArray response = parser.generateResponse(slaveAddress, functionCode, parsedData);
-        serialPort->write(response);
-        qDebug() << "Response sent:" << response.toHex();
-    } else {
-       qDebug() << "Modbus 请求解析失败，可能是 CRC 校验失败或数据格式错误";
-    }
-    return data;
-}
 
 void SerialPortManager::handleReadyRead()
 {
@@ -154,49 +130,15 @@ void SerialPortManager::handleReadyRead()
 
         //读取串口缓存区中数据
         QByteArray data = serialPort->readAll();
-        qDebug()<<"data长度:"<<data.size()<<"串口名:"<<serialPort->portName();
-        if (data.size() >= 2) {
+        qDebug()<<"4.ReadyRead缓存区待读数据:"<<data.toHex()<<"ReadyRead缓存区数据大小:"<<data.size()<<"串口名:"<<serialPort->portName();
+        ModbusProtocolParser parser;
+        if(parser.parseReponse(data)){
 
-            /*
-             * 例：这时串口缓存读到的CRC为0xCDAB。
-             * 则crc的倒数第一个元素0xAB左移 8 位后得到 0xAB00;
-             * crc的倒数第二个元素0xCD，保持不变为 0x00CD
-             * 按位或操作后，结果为 0xAB00 | 0x00CD = 0xABCD，即receivedCRC = ABCD
-             * 通过 static_cast<uint8_t> 明确指定类型为"无符号" 8 位整数，这可以避免符号扩展问题。
-            */
-            uint16_t receivedCRC = (static_cast<uint8_t>(data.at(data.size() - 1)) << 8) |
-                                   static_cast<uint8_t>(data.at(data.size() - 2));
-            qDebug()<<"data:"<<data.toHex();
-
-            ModbusProtocolParser parser; // 创建 ModbusProtocolParser 对象
-            // 提取功能码(值得注意的是：异常响应中"功能码"的最高位会设置为 1，表示错误响应,)
-            uint8_t functionCode = static_cast<uint8_t>(data.at(1));
-            QByteArray dataArea;
-            if (functionCode >= 0x01 && functionCode <= 0x04) {
-                // 功能码 0x01 到 0x04 的响应包含字节计数
-                dataArea = data.mid(3, data.size() - 5);// 数据域大小 = 总大小 - 1字节地址 - 1字节功能码 -1字节计数 - 2字节CRC
-            }else{
-                // 其他功能码的响应通常不包含字节计数
-                dataArea = data.mid(2, data.size() - 4);  // 数据域大小 = 总大小 - 1字节地址 - 1字节功能码 - 2字节CRC
-            }
-
-            data.chop(2);  // Remove CRC bytes from data
-            uint16_t calculatedCRC = ModbusProtocolParser::crc16UsingTable(data);
-            qDebug()<<"receivedCRC:"<<receivedCRC<<"calculatedCRC"<<calculatedCRC<<"ChopData:"<<data.toHex();
-            //开始检查收到的和发送的一致性;
-            if (receivedCRC == calculatedCRC) {
-                qDebug() << "收到合法数据(Succesed):" << data.toHex();
-
-
-                parser.floatData(dataArea); // 如果 floatData 是静态函数，则可以用类名直接调用
-                emit dataReceived(serialPort->portName(), data);
-
-
-            } else {
-                qDebug() << "*******CRC 检查失败(Fail),发送的和接收数据不一致!!!*******";
-            }
+            QByteArray dataField = parser.getDataField();
+            qDebug()<<"6.成功解析仪表返回响应帧的数据域:"<<dataField.toHex();
+            parser.floatData(dataField); // 如果 floatData 是静态函数，则可以用类名直接调用
+            emit dataReceived(serialPort->portName(), data);
         }
-
 
     }
 }
