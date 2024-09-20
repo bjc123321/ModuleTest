@@ -42,19 +42,19 @@ static const quint16 crc16Table[] =
     0x8201, 0x42C0, 0x4380, 0x8341, 0x4100, 0x81C1, 0x8081, 0x4040
 };
 
-bool ModbusProtocolParser::parseReponse(const QByteArray &request)
+bool ModbusProtocolParser::parseReponse(const QByteArray &reponse)
 {
-    if (request.size() < 4) {  // Modbus 最小请求帧长度
+    if (reponse.size() < 4) {  // Modbus 最小请求帧长度
             qDebug() << "响应帧长度不足，无法解析";
             return false;
     }
 
     // 提取地址域（从机地址）
-    slaveAddress = static_cast<uint8_t>(request.at(0));
+    slaveAddress = static_cast<uint8_t>(reponse.at(0));
     qDebug()<<"从机地址(10十进制)"<<slaveAddress;
 
     // 提取功能码(值得注意的是：异常响应中"功能码"的最高位会设置为 1，表示错误响应,)
-    functionCode = static_cast<uint8_t>(request.at(1));
+    functionCode = static_cast<uint8_t>(reponse.at(1));
     qDebug()<<"功能码(10十进制)"<<functionCode;
 
     /*
@@ -67,10 +67,10 @@ bool ModbusProtocolParser::parseReponse(const QByteArray &request)
 
     if (functionCode >= 0x01 && functionCode <= 0x04) {
         // 功能码 0x01 到 0x04 的响应包含字节计数
-        dataField = request.mid(3, request.size() - 5);// 数据域大小 = 总大小 - 1字节地址 - 1字节功能码 -1字节计数 - 2字节CRC
+        dataField = reponse.mid(3, reponse.size() - 5);// 数据域大小 = 总大小 - 1字节地址 - 1字节功能码 -1字节计数 - 2字节CRC
     }else{
         // 其他功能码的响应通常不包含字节计数
-        dataField = request.mid(2, request.size() - 4);  // 数据域大小 = 总大小 - 1字节地址 - 1字节功能码 - 2字节CRC
+        dataField = reponse.mid(2, reponse.size() - 4);  // 数据域大小 = 总大小 - 1字节地址 - 1字节功能码 - 2字节CRC
     }
 
     qDebug()<<"数据域"<<dataField.toHex();
@@ -83,11 +83,11 @@ bool ModbusProtocolParser::parseReponse(const QByteArray &request)
      * 按位或操作后，结果为 0xAB00 | 0x00CD = 0xABCD，即receivedCRC = ABCD
      * 通过 static_cast<uint8_t> 明确指定类型为"无符号" 8 位整数，这可以避免符号扩展问题。
     */
-    uint16_t receivedCRC = (static_cast<uint8_t>(request.at(request.size() - 1)) << 8) |
-                           static_cast<uint8_t>(request.at(request.size() - 2));
+    uint16_t receivedCRC = (static_cast<uint8_t>(reponse.at(reponse.size() - 1)) << 8) |
+                           static_cast<uint8_t>(reponse.at(reponse.size() - 2));
 
     // 校验 CRC
-    return verifyCRC(request.left(request.size() - 2), receivedCRC);
+    return verifyCRC(reponse.left(reponse.size() - 2), receivedCRC);
 }
 
 QByteArray ModbusProtocolParser::generateResponse(uint8_t slaveAddress, uint8_t functionCode, const QByteArray &data)
