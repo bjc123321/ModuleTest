@@ -20,6 +20,10 @@ public:
         return instance;
     }
 
+    // 数据缓冲区
+    QByteArray buffer;
+
+
     bool addSerialPort(const QString &portName);
     bool removeSerialPort(const QString &portName);
     QSerialPort* getSerialPort(const QString &portName);

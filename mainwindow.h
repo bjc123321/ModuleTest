@@ -4,7 +4,7 @@
 #include <QMainWindow>
 #include <QDebug>
 #include <QQueue>
-
+#include <QTimer>
 
 #include "serialportmanager.h"
 
@@ -25,8 +25,16 @@ private:
 
 
 
-    QQueue<QByteArray> controlDataQueue;  // 控制数据命令队列
-    bool isSerialControlBusy = false;     // 串口控制忙碌标志
+    QQueue<QByteArray> controlPanelQueue;  // 控制仪表命令队列
+    bool isControlPanelHexBusy = false;     // 仪表16进制命令控制忙碌标志
+
+    QQueue<QByteArray> controlLoadQueue;  // 控制负载命令队列
+    bool isControlLoadHexBusy = false;     // 负载16进制控制忙碌标志
+
+
+
+    //保存串口COM名
+    QString serialPortComName = "";
 
 
     //测试控制鲲航科技
@@ -34,14 +42,31 @@ private:
     //测试控制8961C2检测仪
     void test8961C2();
 
-private:
-    void sendNextControlData();      // 从队列发送下一个控制的数据
+    QTimer *timer = nullptr;
 
+private:
+
+    // 从队列发送下一个"控制仪表"的数据
+    void sendControlPanelHex();
+
+    // 从队列发送下一个"控制负载"的数据
+    void sendControlLoadHex();
+
+
+
+
+    // 列出指定类型如:USB串口设备
+    void listUsbSerialPorts();
+    //判断是不是usb的串口com
+    bool isUsbSerialPort(const QSerialPortInfo &portInfo);
+
+    QString get_USB_PORT_COM(const QSerialPortInfo &portInfo);
 
 
 private slots:
 
 
+    void sendTestData();
 
     void onDataReceived(const QString &portName, const QByteArray &data);//测试
 

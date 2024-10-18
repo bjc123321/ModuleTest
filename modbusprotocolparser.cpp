@@ -44,10 +44,22 @@ static const quint16 crc16Table[] =
 
 bool ModbusProtocolParser::parseReponse(const QByteArray &reponse)
 {
-    if (reponse.size() < 4) {  // Modbus 最小请求帧长度
+    qDebug()<<"响应帧"<<reponse.toHex();
+    if (reponse.size() < 4) {  // Modbus 最小响应帧长度
             qDebug() << "响应帧长度不足，无法解析";
             return false;
     }
+
+
+    // 获取字节数（3字节之后的位置）
+        int reponseLength = static_cast<uint8_t>(reponse[2]);
+        int expectedFrameLength = 5 + reponseLength; // 地址 + 功能码 + 字节数 + 数据 + CRC（2字节）
+
+        // 检查数据长度是否足够
+        if (reponse.size() < expectedFrameLength) {
+            qDebug()<<"reponse.size()"<<reponse.size()<<"期望长度:"<<expectedFrameLength;
+            return false; // 数据不完整
+        }
 
     // 提取地址域（从机地址）
     slaveAddress = static_cast<uint8_t>(reponse.at(0));
@@ -246,3 +258,22 @@ float ModbusProtocolParser::floatData(QByteArray orgData)
     qDebug() << "解析后浮点值:"  <<  floatValue << "数据:" << orgData.toHex();
     return floatValue;
 }
+
+int ModbusProtocolParser::intData(QByteArray orgData)
+{
+    qDebug() << "接收到的数据域:" << orgData.toHex() << "长度：" << orgData.size();
+
+    // 修改数据长度检查条件
+    if(orgData.size() != 2){
+        return -1; // 返回错误值或处理异常情况
+    }
+
+    int intValue = 0; // 初始化整型值
+    QDataStream stream(orgData);
+    stream.setByteOrder(QDataStream::LittleEndian); // 协议为小端存储
+    stream >> intValue; // 从数据流中读取整型值
+
+    qDebug() << "解析后整型值:" << intValue << "数据:" << orgData.toHex();
+    return intValue; // 返回解析后的整型值
+}
+

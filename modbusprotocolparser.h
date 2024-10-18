@@ -15,7 +15,7 @@ public:
 
 public:
     // 解析 Modbus 响应帧
-    bool parseReponse(const QByteArray &request);
+    bool parseReponse(const QByteArray &response);
 
     // 生成 Modbus 响应帧
     QByteArray generateResponse(uint8_t slaveAddress, uint8_t functionCode, const QByteArray &data);
@@ -42,6 +42,9 @@ public:
 
     //解析16进制为浮点数
     float floatData(QByteArray orgData);
+
+    //解析16进制数据为整形数据
+    int intData(QByteArray orgData);
 
 private:
     uint8_t slaveAddress = 0;   // 从机地址
