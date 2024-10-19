@@ -323,6 +323,74 @@ void MainWindow::test8961C2()
     });
 
 
+    connect(ui->pushButton_23,&QPushButton::clicked,this,[this](){
+
+        qDebug()<<"开始突加";
+
+        //这个命令可以自动切换仪表页面到突加,仅限于瞬态测试
+        QByteArray dataToSend = QByteArray::fromHex("011000000001020024");
+        controlPanelQueue.enqueue(dataToSend); // 将数据加入队列
+        qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isControlPanelHexBusy;
+        // 如果串口不忙，立即发送
+        if (!isControlPanelHexBusy) {
+            sendControlPanelHex();
+        }
+
+    });
+
+
+    connect(ui->pushButton_21,&QPushButton::clicked,this,[this](){
+
+        qDebug()<<"突加数值生成曲线Y坐标值";
+
+        QStringList requestFramList = {"011000000001020001","0103034c0002","0103034e0002"};
+       // 发送指定的16进制数据(最后的0003意为:读3个寄存器即：6个字节)
+        for(int i = 0;i<requestFramList.length();i++){
+
+            QString hexString = requestFramList.at(i);  // 获取 QString
+            QByteArray byteArray = hexString.toUtf8();  // 将 QString 转换为 QByteArray
+            QByteArray dataToSend = QByteArray::fromHex(byteArray);  // 使用 QByteArray::fromHex
+            controlPanelQueue.enqueue(dataToSend); // 将数据加入队列
+            qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isControlPanelHexBusy;
+        }
+       // 如果串口不忙，立即发送
+       if (!isControlPanelHexBusy) {
+           sendControlPanelHex();
+       }
+
+    });
+
+    connect(ui->pushButton_24,&QPushButton::clicked,this,[this](){
+
+        qDebug()<<"开始突卸";
+
+        QByteArray dataToSend = QByteArray::fromHex("011000000001020025");
+        controlPanelQueue.enqueue(dataToSend); // 将数据加入队列
+        qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isControlPanelHexBusy;
+        // 如果串口不忙，立即发送
+        if (!isControlPanelHexBusy) {
+            sendControlPanelHex();
+        }
+
+    });
+
+
+    connect(ui->pushButton_26,&QPushButton::clicked,this,[this](){
+
+        qDebug()<<"停止进行中的突加、突卸、整定和波动测试";
+
+        QByteArray dataToSend = QByteArray::fromHex("011000000001020020");
+        controlPanelQueue.enqueue(dataToSend); // 将数据加入队列
+        qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isControlPanelHexBusy;
+        // 如果串口不忙，立即发送
+        if (!isControlPanelHexBusy) {
+            sendControlPanelHex();
+        }
+
+    });
+
+
+
 }
 
 void MainWindow::onDataReceived(const QString &portName, const QByteArray &data)
