@@ -269,9 +269,10 @@ void MainWindow::test8961C2()
 
         qDebug()<<"关闭风机";
 
-        QByteArray dataToSend = QByteArray::fromHex("010600010000");
-        controlLoadQueue.enqueue(dataToSend); // 将数据加入队列
-        qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isControlLoadHexBusy;
+        QByteArray dataToSend1 = QByteArray::fromHex("010600010000");
+        controlLoadQueue.enqueue(dataToSend1); // 将数据加入队列
+//        QByteArray dataToSend2 = QByteArray::fromHex("011000000001020000");
+//        controlPanelQueue.enqueue(dataToSend2); // 将数据加入队列
         // 如果串口不忙，立即发送
         if (!isControlLoadHexBusy) {
             sendControlLoadHex();

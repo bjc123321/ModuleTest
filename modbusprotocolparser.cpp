@@ -52,14 +52,14 @@ bool ModbusProtocolParser::parseReponse(const QByteArray &reponse)
 
 
     // 获取字节数（3字节之后的位置）
-        int reponseLength = static_cast<uint8_t>(reponse[2]);
-        int expectedFrameLength = 5 + reponseLength; // 地址 + 功能码 + 字节数 + 数据 + CRC（2字节）
+    int reponseLength = static_cast<uint8_t>(reponse[2]);
+    int expectedFrameLength = 5 + reponseLength; // 地址 + 功能码 + 字节数 + 数据 + CRC（2字节）
 
-        // 检查数据长度是否足够
-        if (reponse.size() < expectedFrameLength) {
-            qDebug()<<"reponse.size()"<<reponse.size()<<"期望长度:"<<expectedFrameLength;
-            return false; // 数据不完整
-        }
+    // 检查数据长度是否足够
+    if (reponse.size() < expectedFrameLength) {
+        qDebug()<<"reponse.size()"<<reponse.size()<<"期望长度:"<<expectedFrameLength;
+        return false; // 数据不完整
+    }
 
     // 提取地址域（从机地址）
     slaveAddress = static_cast<uint8_t>(reponse.at(0));
