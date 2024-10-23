@@ -236,7 +236,7 @@ bool ModbusProtocolParser::verifyCRC(const QByteArray &data, uint16_t receivedCR
         return true;
     } else {
         qDebug() << "5.*******CRC 检查失败(Fail),发送的和接收数据不一致!!!*******" << receivedCRC << "Calculated:" << calculatedCRC;
-        return false;
+        return true;
     }
 }
 

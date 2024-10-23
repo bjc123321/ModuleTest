@@ -27,9 +27,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
 
-
-
-
 //    testKHKJ();
     test8961C2();
 
@@ -38,35 +35,41 @@ MainWindow::MainWindow(QWidget *parent) :
 
 void MainWindow::sendTestData()
 {
-    /*
-     * 注意：对于读取仪表示数前，要先锁定当前数据所在页面，再执行请求帧
-     * 这里的requestFramList.at(0):锁定页面1
-     * 这里的requestFramList.at(1):读取线路1瞬时电压偏差-
-     * 这里的requestFramList.at(2):读取线路1电压恢复时间
-    */
-    QStringList requestFramList = {"0103001e0002","010300200002","010300220002",
-                                   "0103002e0002","010300300002","010300320002",
-                                   "010300380002","0103003a0002","0103003c0002",
-                                   "010300520002","010300540002","010300560002",
-                                   "0103002a0002","010300340002","0103003e0002","010300580002",
-                                   "010300240002","010300260002","010300280002","0103002c0002"};
-    for(int i = 0;i<requestFramList.length();i++){
-
-        QString hexString = requestFramList.at(i);  // 获取 QString
-        QByteArray byteArray = hexString.toUtf8();  // 将 QString 转换为 QByteArray
-        QByteArray dataToSend = QByteArray::fromHex(byteArray);  // 使用 QByteArray::fromHex
-        controlPanelQueue.enqueue(dataToSend); // 将数据加入队列
-        qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isControlPanelHexBusy;
-    }
 
 
-//            QByteArray dataToSend = QByteArray::fromHex("010300120002");
-//            controlDataQueue.enqueue(dataToSend); // 将数据加入队列
-//            qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isSerialControlBusy;
     // 如果串口不忙，立即发送
     if (!isControlPanelHexBusy) {
+
+
+
+        /*
+         * 注意：对于读取仪表示数前，要先锁定当前数据所在页面，再执行请求帧
+         * 这里的requestFramList.at(0):锁定页面1
+         * 这里的requestFramList.at(1):读取线路1瞬时电压偏差-
+         * 这里的requestFramList.at(2):读取线路1电压恢复时间
+        */
+        QStringList requestFramList = {"0103001e0002","010300200002","010300220002",
+                                       "0103002e0002","010300300002","010300320002",
+                                       "010300380002","0103003a0002","0103003c0002",
+                                       "010300520002","010300540002","010300560002",
+                                       "0103002a0002","010300340002","0103003e0002","010300580002",
+                                       "010300240002","010300260002","010300280002","0103002c0002"};
+        for(int i = 0;i<requestFramList.length();i++){
+
+            QString hexString = requestFramList.at(i);  // 获取 QString
+            QByteArray byteArray = hexString.toUtf8();  // 将 QString 转换为 QByteArray
+            QByteArray dataToSend = QByteArray::fromHex(byteArray);  // 使用 QByteArray::fromHex
+            controlPanelQueue.enqueue(dataToSend); // 将数据加入队列
+            qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isControlPanelHexBusy;
+        }
+
         sendControlPanelHex();
+
+    }else{
+            isControlPanelHexBusy =false;
     }
+
+
 }
 
 void MainWindow::testKHKJ()
@@ -216,9 +219,22 @@ void MainWindow::test8961C2()
 
     connect(ui->pushButton_13,&QPushButton::clicked,this,[this](){
 
-        qDebug()<<"锁定页面1......";
+        qDebug()<<"切换页面1......";
 
-        QByteArray dataToSend = QByteArray::fromHex("011000000001020081");
+        QByteArray dataToSend = QByteArray::fromHex("011000000001020001");
+        controlPanelQueue.enqueue(dataToSend); // 将数据加入队列
+        qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isControlPanelHexBusy;
+        // 如果串口不忙，立即发送
+        if (!isControlPanelHexBusy) {
+            sendControlPanelHex();
+        }
+    });
+
+    connect(ui->pushButton_31,&QPushButton::clicked,this,[this](){
+
+        qDebug()<<"切换页面2......";
+
+        QByteArray dataToSend = QByteArray::fromHex("011000000001020002");
         controlPanelQueue.enqueue(dataToSend); // 将数据加入队列
         qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isControlPanelHexBusy;
         // 如果串口不忙，立即发送
@@ -229,9 +245,14 @@ void MainWindow::test8961C2()
 
     connect(ui->pushButton_14,&QPushButton::clicked,this,[this](){
 
-        qDebug()<<"读取线路一电压...";
-
-        timer->start(1000);
+        qDebug()<<"读取稳态线路一电压...";
+        QByteArray dataToSend = QByteArray::fromHex("0103001e0002");
+        controlPanelQueue.enqueue(dataToSend); // 将数据加入队列
+        qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isControlPanelHexBusy;
+        // 如果串口不忙，立即发送
+        if (!isControlPanelHexBusy) {
+            sendControlPanelHex();
+        }
 
 
     });
@@ -255,13 +276,14 @@ void MainWindow::test8961C2()
 
         qDebug()<<"打开风机";
 
+
         QByteArray dataToSend = QByteArray::fromHex("010600010001");
         controlLoadQueue.enqueue(dataToSend); // 将数据加入队列
         qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isControlLoadHexBusy;
         // 如果串口不忙，立即发送
-        if (!isControlLoadHexBusy) {
+
             sendControlLoadHex();
-        }
+
 
     });
 
@@ -274,9 +296,9 @@ void MainWindow::test8961C2()
 //        QByteArray dataToSend2 = QByteArray::fromHex("011000000001020000");
 //        controlPanelQueue.enqueue(dataToSend2); // 将数据加入队列
         // 如果串口不忙，立即发送
-        if (!isControlLoadHexBusy) {
+
             sendControlLoadHex();
-        }
+
 
     });
 
@@ -316,9 +338,9 @@ void MainWindow::test8961C2()
         controlLoadQueue.enqueue(dataToSend); // 将数据加入队列
         qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isControlLoadHexBusy;
         // 如果串口不忙，立即发送
-        if (!isControlLoadHexBusy) {
-            sendControlLoadHex();
-        }
+
+        sendControlLoadHex();
+
 
     });
 
@@ -343,20 +365,23 @@ void MainWindow::test8961C2()
 
         qDebug()<<"突加数值生成曲线Y坐标值";
 
-        QStringList requestFramList = {"011000000001020001","0103034c0002","0103034e0002"};
-       // 发送指定的16进制数据(最后的0003意为:读3个寄存器即：6个字节)
-        for(int i = 0;i<requestFramList.length();i++){
+        if(!isReadSuddLoadYHexBusy){
+            QStringList requestFramList = {"0103034c0002","0103034e0002"};
+           // 发送指定的16进制数据(最后的0003意为:读3个寄存器即：6个字节)
+            for(int i = 0;i<requestFramList.length();i++){
 
-            QString hexString = requestFramList.at(i);  // 获取 QString
-            QByteArray byteArray = hexString.toUtf8();  // 将 QString 转换为 QByteArray
-            QByteArray dataToSend = QByteArray::fromHex(byteArray);  // 使用 QByteArray::fromHex
-            controlPanelQueue.enqueue(dataToSend); // 将数据加入队列
-            qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isControlPanelHexBusy;
+                QString hexString = requestFramList.at(i);  // 获取 QString
+                QByteArray byteArray = hexString.toUtf8();  // 将 QString 转换为 QByteArray
+                QByteArray dataToSend = QByteArray::fromHex(byteArray);  // 使用 QByteArray::fromHex
+                suddYDataQueue.enqueue(dataToSend); // 将数据加入队列
+                qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isControlPanelHexBusy;
+            }
+
+            readSuddLoadYDataHex();
+        }else{
+            isReadSuddLoadYHexBusy = false;
         }
-       // 如果串口不忙，立即发送
-       if (!isControlPanelHexBusy) {
-           sendControlPanelHex();
-       }
+
 
     });
 
@@ -375,17 +400,110 @@ void MainWindow::test8961C2()
     });
 
 
-    connect(ui->pushButton_26,&QPushButton::clicked,this,[this](){
+    connect(ui->pushButton_25,&QPushButton::clicked,this,[this](){
 
-        qDebug()<<"停止进行中的突加、突卸、整定和波动测试";
+        qDebug()<<"启动录波";
 
-        QByteArray dataToSend = QByteArray::fromHex("011000000001020020");
-        controlPanelQueue.enqueue(dataToSend); // 将数据加入队列
-        qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isControlPanelHexBusy;
+        QByteArray dataToSend = QByteArray::fromHex("011000000001020031");
+        SerialPortManager::getInstance().writeData("COM7", dataToSend);
+
+    });
+
+    connect(ui->pushButton_29,&QPushButton::clicked,this,[this](){
+
+        qDebug()<<"*********停止录波***********";
+
+        QByteArray dataToSend = QByteArray::fromHex("011000000001020030");
+        SerialPortManager::getInstance().writeData("COM7", dataToSend);
+
+
+    });
+
+    connect(ui->pushButton_30,&QPushButton::clicked,this,[this](){
+
+        qDebug()<<"*********录波数据***********";
         // 如果串口不忙，立即发送
         if (!isControlPanelHexBusy) {
+
+            QStringList requestFramList = {"010300010001","010300020001","010300030001"};
+
+//            QStringList requestFramList = {"0103034c0002","0103034e0002","010303500002"};
+            for(int i = 0;i<requestFramList.length();i++){
+
+                QString hexString = requestFramList.at(i);  // 获取 QString
+                QByteArray byteArray = hexString.toUtf8();  // 将 QString 转换为 QByteArray
+                QByteArray dataToSend = QByteArray::fromHex(byteArray);  // 使用 QByteArray::fromHex
+                controlPanelQueue.enqueue(dataToSend); // 将数据加入队列
+                qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isControlPanelHexBusy;
+            }
+
             sendControlPanelHex();
+
+        }else{
+                isControlPanelHexBusy =false;
         }
+
+
+    });
+
+    connect(ui->pushButton_26,&QPushButton::clicked,this,[this](){
+
+        if (!isControlPanelHexBusy) {
+            qDebug()<<"停止进行中的突加、突卸、整定和波动测试";
+
+            QByteArray dataToSend = QByteArray::fromHex("011000000001020020");
+            controlPanelQueue.enqueue(dataToSend); // 将数据加入队列
+            qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isControlPanelHexBusy;
+            // 如果串口不忙，立即发送
+
+                sendControlPanelHex();
+        }else{
+            isControlPanelHexBusy = false;
+        }
+
+    });
+
+
+    connect(ui->pushButton_27,&QPushButton::clicked,this,[this](){
+
+
+
+
+        timer->start(1000);
+
+
+    });
+
+    connect(ui->pushButton_28,&QPushButton::clicked,this,[this](){
+
+        qDebug()<<"获取突加点总数";
+
+
+        // 如果串口不忙，立即发送
+        if (!isControlPanelHexBusy) {
+
+            QStringList requestFramList = {"0103002a0001","0103002b0001","0103002c0001"};
+
+//            QStringList requestFramList = {"0103034c0002","0103034e0002","010303500002"};
+            for(int i = 0;i<requestFramList.length();i++){
+
+                QString hexString = requestFramList.at(i);  // 获取 QString
+                QByteArray byteArray = hexString.toUtf8();  // 将 QString 转换为 QByteArray
+                QByteArray dataToSend = QByteArray::fromHex(byteArray);  // 使用 QByteArray::fromHex
+                controlPanelQueue.enqueue(dataToSend); // 将数据加入队列
+                qDebug() << "数据加入队列：" << dataToSend.toHex()<<"串口是否忙碌:"<<isControlPanelHexBusy;
+            }
+
+            sendControlPanelHex();
+
+        }else{
+            isControlPanelHexBusy =false;
+        }
+
+
+
+
+
 
     });
 
@@ -409,14 +527,17 @@ void MainWindow::onDataReceived(const QString &portName, const QByteArray &data)
 
     if(portName == "COM5"){
 
-        isControlLoadHexBusy = false; // 标记为负载控制不忙碌
+        isControlLoadHexBusy = false; // 返回响应帧的数据解析成功时，标记为负载控制不忙碌
         // 继续发送队列中的下一个数据
         sendControlLoadHex();
 
     }else if(portName == "COM7"){
-        isControlPanelHexBusy = false; // 标记仪表控制为不忙碌
+        isControlPanelHexBusy = false; // 返回响应帧的数据解析成功时，标记仪表控制为不忙碌
         // 继续发送队列中的下一个数据
         sendControlPanelHex();
+
+        isReadSuddLoadYHexBusy = false;
+
     }
 
 
@@ -491,7 +612,10 @@ void MainWindow::sendControlPanelHex()
         SerialPortManager::getInstance().writeData("COM7", nextData);
     }else{
         qDebug()<<"队列中数据全部发送完毕!!";
+
+
     }
+
 }
 
 
@@ -507,6 +631,24 @@ void MainWindow::sendControlLoadHex()
     }
 }
 
+
+void MainWindow::readSuddLoadYDataHex()
+{
+
+    if(!suddYDataQueue.isEmpty()){
+
+        QByteArray nextData = suddYDataQueue.dequeue(); // 从队列中取出数据
+        qDebug()<<"突加曲线Y坐标的响应帧:"<<nextData;
+        isReadSuddLoadYHexBusy = true; // 标记为忙碌
+        SerialPortManager::getInstance().writeData("COM7", nextData);
+
+    }else{
+
+        qDebug()<<"读取突加Y坐标的命令全部发送完毕!!";
+
+    }
+
+}
 
 MainWindow::~MainWindow()
 {

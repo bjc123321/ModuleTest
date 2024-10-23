@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1024</width>
-    <height>621</height>
+    <width>1241</width>
+    <height>658</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -128,7 +128,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>锁定数据更新,并切换到页面0</string>
+     <string>切换到页面0</string>
     </property>
    </widget>
    <widget class="QPushButton" name="pushButton_9">
@@ -167,7 +167,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>锁定数据更新,并切换到页面4</string>
+     <string>切换到页面4</string>
     </property>
    </widget>
    <widget class="QPushButton" name="pushButton_12">
@@ -193,7 +193,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>锁定数据更新,并切换到页面1</string>
+     <string>切换到页面1</string>
     </property>
    </widget>
    <widget class="QPushButton" name="pushButton_14">
@@ -225,8 +225,8 @@
    <widget class="QPushButton" name="pushButton_16">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>300</y>
+      <x>950</x>
+      <y>190</y>
       <width>121</width>
       <height>23</height>
      </rect>
@@ -238,8 +238,8 @@
    <widget class="QPushButton" name="pushButton_17">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>330</y>
+      <x>950</x>
+      <y>220</y>
       <width>121</width>
       <height>23</height>
      </rect>
@@ -251,8 +251,8 @@
    <widget class="QPushButton" name="pushButton_18">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>370</y>
+      <x>950</x>
+      <y>260</y>
       <width>111</width>
       <height>23</height>
      </rect>
@@ -264,8 +264,8 @@
    <widget class="QPushButton" name="pushButton_19">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>400</y>
+      <x>950</x>
+      <y>290</y>
       <width>111</width>
       <height>23</height>
      </rect>
@@ -277,8 +277,8 @@
    <widget class="QPushButton" name="pushButton_20">
     <property name="geometry">
      <rect>
-      <x>190</x>
-      <y>300</y>
+      <x>1110</x>
+      <y>190</y>
       <width>91</width>
       <height>23</height>
      </rect>
@@ -290,8 +290,8 @@
    <widget class="QLineEdit" name="lineEdit">
     <property name="geometry">
      <rect>
-      <x>180</x>
-      <y>330</y>
+      <x>1100</x>
+      <y>220</y>
       <width>113</width>
       <height>20</height>
      </rect>
@@ -302,12 +302,12 @@
      <rect>
       <x>580</x>
       <y>150</y>
-      <width>75</width>
+      <width>121</width>
       <height>23</height>
      </rect>
     </property>
     <property name="text">
-     <string>突加曲线</string>
+     <string>突加曲线Y坐标</string>
     </property>
    </widget>
    <widget class="QPushButton" name="pushButton_22">
@@ -373,6 +373,111 @@
     </property>
     <property name="text">
      <string>停止进行中的整定、波动、突加、突卸</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_27">
+    <property name="geometry">
+     <rect>
+      <x>40</x>
+      <y>280</y>
+      <width>75</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>稳态测试</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEdit_2">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>320</y>
+      <width>113</width>
+      <height>20</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEdit_3">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>350</y>
+      <width>113</width>
+      <height>20</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEdit_4">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>390</y>
+      <width>113</width>
+      <height>20</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEdit_5">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>430</y>
+      <width>113</width>
+      <height>20</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_28">
+    <property name="geometry">
+     <rect>
+      <x>324</x>
+      <y>460</y>
+      <width>161</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>获取突加数据点总数</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_29">
+    <property name="geometry">
+     <rect>
+      <x>630</x>
+      <y>390</y>
+      <width>75</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>停止录波</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_30">
+    <property name="geometry">
+     <rect>
+      <x>630</x>
+      <y>430</y>
+      <width>121</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>录波数据</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_31">
+    <property name="geometry">
+     <rect>
+      <x>330</x>
+      <y>230</y>
+      <width>171</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>切换页面2</string>
     </property>
    </widget>
   </widget>

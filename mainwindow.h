@@ -5,7 +5,7 @@
 #include <QDebug>
 #include <QQueue>
 #include <QTimer>
-
+#include <QMap>
 #include "serialportmanager.h"
 
 namespace Ui {
@@ -31,6 +31,9 @@ private:
     QQueue<QByteArray> controlLoadQueue;  // 控制负载命令队列
     bool isControlLoadHexBusy = false;     // 负载16进制控制忙碌标志
 
+    //存储突加Y坐标数据的vector
+    QQueue<QByteArray> suddYDataQueue;
+    bool isReadSuddLoadYHexBusy = false;
 
 
     //保存串口COM名
@@ -44,13 +47,20 @@ private:
 
     QTimer *timer = nullptr;
 
+    QMap<QString, QString> valueMap; // 存储QLineEdit的文本
+
+
+
 private:
 
-    // 从队列发送下一个"控制仪表"的数据
+    // 从队列发送下一个"控制仪表实时读书"的数据
     void sendControlPanelHex();
 
     // 从队列发送下一个"控制负载"的数据
     void sendControlLoadHex();
+
+    //读取所有突加Y坐标数据
+    void readSuddLoadYDataHex();
 
 
 

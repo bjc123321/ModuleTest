@@ -115,7 +115,7 @@ bool SerialPortManager::writeData(const QString &portName, const QByteArray &dat
     } else {
         qDebug() << "2.Successfully wrote" << bytesWritten << "bytes to the serial port.";
     }
-    qDebug() << "3.Sending data:" << packet.toHex()<<"Sending data大小:"<<packet.size();
+    qDebug() << "3.Sending data:" << packet.toHex()<<"Sending data大小:"<<packet.size()<<"发送寄存器个数:"<<static_cast<uint8_t>(packet[5]);;
     return serialPort->waitForBytesWritten(500);//等待最多500毫秒直到所有数据都写入成功。此时间内没有完成写入,返回 false。
 }
 
@@ -142,21 +142,44 @@ void SerialPortManager::handleReadyRead()
             qDebug() << "返回设备地址异常码为:"<<buffer[0];
             buffer[0] = static_cast<char>(0x01); // 修改设备地址
             qDebug() << "设备地址已修改";
+
         }
         buffer.append(data); // 将新数据添加到缓冲区
-        qDebug()<<"输出Buffer:"<<buffer.toHex();
-        ModbusProtocolParser parser;
-        if(parser.parseReponse(buffer)){
+        if(buffer.size()<12){
 
-            QByteArray dataField = parser.getDataField();
-            qDebug()<<"6.成功解析仪表返回响应帧的数据域:"<<dataField.toHex();
-            parser.floatData(dataField);// 如果是float型数据则用这个方法
-//            parser.intData(dataField); // 如果 int型数据ze 是静态函数，则可以用类名直接调用
-            emit dataReceived(serialPort->portName(), buffer);
+            qDebug()<<"输出Buffer:"<<buffer.toHex();
+            ModbusProtocolParser parser;
+            if(parser.parseReponse(buffer)){
+
+                QByteArray dataField = parser.getDataField();
+                qDebug()<<"6.成功解析仪表返回响应帧的数据域:"<<dataField.toHex();
+
+                uint8_t byteCode = static_cast<uint8_t>(buffer.at(2));
+                qDebug()<<"返回的字节数:"<<byteCode;
+                if( byteCode == 4 ){
+
+                    // 如果字节数为4个字节，则返回的是float型数据
+                    parser.floatData(dataField);
+
+                }else if( byteCode == 2 ){
+
+                    // 如果字节数为2个字节，则返回的是int型数据
+                    parser.intData(dataField); // 如果 int型数据ze 是静态函数，则可以用类名直接调用
+
+                }
+                emit dataReceived(serialPort->portName(), buffer);
+                buffer.clear();
+            }
+
+        }else{
             buffer.clear();
         }
 
+
+
+
     }
+
 }
 
 
