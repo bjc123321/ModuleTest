@@ -366,7 +366,7 @@ void MainWindow::test8961C2()
         qDebug()<<"突加数值生成曲线Y坐标值";
 
         if(!isReadSuddLoadYHexBusy){
-            QStringList requestFramList = {"0103034c0002","0103034e0002"};
+            QStringList requestFramList = {"010300020002","010300040002"};
            // 发送指定的16进制数据(最后的0003意为:读3个寄存器即：6个字节)
             for(int i = 0;i<requestFramList.length();i++){
 
@@ -501,11 +501,37 @@ void MainWindow::test8961C2()
         }
 
 
+    });
 
+    connect(ui->pushButton_32,&QPushButton::clicked,this,[this](){
 
+        QString hexStr = "0044"; // 示例4位十六进制数
+        // 将十六进制字符串转换为整数
+        bool ok; // 用于检查转换是否成功
+        int registerCount = hexStr.toInt(&ok, 16); // 第二个参数为16表示转换为十六进制
 
+        if (ok) {
+                // 输出结果
+                qDebug() << "十六进制数" << hexStr << "转换为整数为:" << registerCount;
+            } else {
+                qDebug() << "转换失败，输入不是有效的十六进制数。";
+            }
+
+        handleResponseFrameFun(registerCount*2);
 
     });
+
+
+
+}
+
+
+
+void MainWindow::handleResponseFrameFun(int byteCount)
+{
+
+    int responseFrameSize = byteCount + 5;//从机地址：1个字节；功能码：1个字节；字节数：1个字节；数据域：byteCount个字节；CRC校验：2个字节
+    qDebug()<<"字节个数："<<byteCount<<"(功能码03)返回的响应帧字节数应该为:"<<responseFrameSize;
 
 
 
@@ -638,7 +664,7 @@ void MainWindow::readSuddLoadYDataHex()
     if(!suddYDataQueue.isEmpty()){
 
         QByteArray nextData = suddYDataQueue.dequeue(); // 从队列中取出数据
-        qDebug()<<"突加曲线Y坐标的响应帧:"<<nextData;
+        qDebug()<<"读突加曲线Y坐标的请求帧:"<<nextData.toHex();
         isReadSuddLoadYHexBusy = true; // 标记为忙碌
         SerialPortManager::getInstance().writeData("COM7", nextData);
 

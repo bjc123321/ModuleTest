@@ -183,6 +183,81 @@ void SerialPortManager::handleReadyRead()
 }
 
 
+void SerialPortManager::checkForCompleteFrame(QSerialPort *serialPort)
+{
+    while (buffer.size() >= 5) { // 检查缓冲区是否至少包含设备地址、功能码和字节计数
+        // 读取设备地址、功能码和字节计数
+        uchar deviceAddress = buffer[0];
+        uchar functionCode = buffer[1];
+        uchar byteCount = buffer[2];
+
+        // 将 byteCount 转换为 int 以确保计算的准确性
+        int expectedByteCount = static_cast<int>(byteCount);
+
+        // 计算完整响应帧的大小
+        int expectedFrameSize = 3 + expectedByteCount + 2; // 3个字节头 + expectedByteCount个字节的数据 + 2个字节CRC
+
+        // 检查缓冲区是否包含完整的响应帧
+        if (buffer.size() >= expectedFrameSize) {
+            // 提取完整的响应帧
+            QByteArray completeFrame = buffer.left(expectedFrameSize);
+            buffer.remove(0, expectedFrameSize); // 从缓冲区中移除已处理的帧
+
+            // 解析响应帧
+            ModbusProtocolParser parser;
+            if(parser.parseReponse(completeFrame)){
+                QByteArray dataField = parser.getDataField();
+                qDebug()<<"6.成功解析仪表返回响应帧的数据域:"<<dataField.toHex();
+
+                uint8_t byteCode = static_cast<uint8_t>(buffer.at(2));
+                qDebug()<<"返回的字节数:"<<byteCode;
+                //解析数据域为浮点、整型或其他
+                parser.parseData(dataField);
+                //发送响应帧
+                emit dataReceived(serialPort->portName(), completeFrame);
+
+            }
+
+        } else {
+            // 如果不够完整，退出检查
+            break;
+        }
+    }
+}
+
+void SerialPortManager::handleReadyRead_2()
+{
+
+    /*
+     * 局部变量 serialPort: 在槽函数内部使用 serialPort 是为了访问信号的发送者（也就是具体的 QSerialPort 对象）
+       通过这种方式,在处理多个串口对象时，区分哪个串口对象发出了信号，并对该对象进行相应的操作。
+    */
+    QSerialPort *serialPort = qobject_cast<QSerialPort *>(sender());
+    qDebug()<<serialPort->portName()<<"发送了数据";
+
+    if(serialPort){
+
+        //读取串口缓存区中数据
+        QByteArray data = serialPort->readAll();
+        qDebug()<<"4.ReadyRead缓存区待读数据:"<<data.toHex()<<"ReadyRead缓存区数据大小:"<<data.size()<<"串口名:"<<serialPort->portName();
+
+        // 检查并修正设备地址
+        if (buffer.size() > 0 && (buffer[0] != static_cast<char>(0x01))) {
+
+            qDebug() << "返回设备地址异常码为:"<<buffer[0];
+            buffer[0] = static_cast<uchar>(0x01); // 修改设备地址
+            qDebug() << "设备地址已修改";
+
+        }
+        buffer.append(data); // 将新数据添加到缓冲区,buffer必须成员，因为会不断拼接
+        checkForCompleteFrame(serialPort);
+
+    }
+
+
+
+}
+
 bool SerialPortManager::configurePort(const QString &portName,
                                       QSerialPort::BaudRate baudRate,
                                       QSerialPort::DataBits dataBits,

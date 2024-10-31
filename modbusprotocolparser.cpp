@@ -277,3 +277,80 @@ int ModbusProtocolParser::intData(QByteArray orgData)
     return intValue; // 返回解析后的整型值
 }
 
+QVector<QVariant> ModbusProtocolParser::parseData(const QByteArray &orgData)
+{
+    qDebug() << "接收到的数据域:" << orgData.toHex() << "长度：" << orgData.size();
+
+    QString parseType = "浮点";
+
+    QVector<QVariant> v_data;
+
+    // 修改数据长度检查条件
+    if(parseType == "整型"){
+
+        // 每2个字节提取一个整型
+        for (int i = 0; i < orgData.size(); i += 2) {
+            if (i + 2 <= orgData.size()) {
+                // 提取4个字节
+                QByteArray floatBytes = orgData.mid(i, 2);
+                // 创建数据流以读取浮点数
+                QDataStream stream(floatBytes);
+                stream.setByteOrder(QDataStream::LittleEndian); // 根据协议设定字节序
+
+                // 解析为浮点数
+                int intValue = 0;
+                stream >> intValue;
+
+                v_data.append(intValue);
+                // 输出解析后的整型
+                qDebug() << "Parsed int value:" << intValue;
+
+            } else {
+
+                qDebug() << "Not enough bytes for another int.";
+
+            }
+        }
+        return v_data;
+
+    }else if(parseType == "浮点"){
+
+        // 每4个字节提取一个浮点数
+        for (int i = 0; i < orgData.size(); i += 4) {
+            if (i + 4 <= orgData.size()) {
+                // 提取4个字节
+                QByteArray floatBytes = orgData.mid(i, 4);
+                // 创建数据流以读取浮点数
+                QDataStream stream(floatBytes);
+                stream.setByteOrder(QDataStream::LittleEndian); // 根据协议设定字节序
+
+                // 解析为浮点数
+                float floatValue = 0.0;
+                stream >> floatValue;
+
+                v_data.append(floatValue);
+                // 输出解析后的浮点数
+                qDebug() << "Parsed float value:" << floatValue;
+
+            } else {
+
+                qDebug() << "Not enough bytes for another float.";
+
+            }
+        }
+        return v_data;
+
+    }
+    return v_data;
+}
+
+
+
+
+
+
+
+
+
+
+

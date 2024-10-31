@@ -73,6 +73,10 @@ private:
     QString get_USB_PORT_COM(const QSerialPortInfo &portInfo);
 
 
+
+    void handleResponseFrameFun(int byteCount);
+
+
 private slots:
 
 

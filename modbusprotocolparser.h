@@ -46,6 +46,8 @@ public:
     //解析16进制数据为整形数据
     int intData(QByteArray orgData);
 
+    QVector<QVariant> parseData(const QByteArray &orgData);
+
 private:
     uint8_t slaveAddress = 0;   // 从机地址
     uint8_t functionCode = 0;   // 功能码
